@@ -1,0 +1,516 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="受験ナビ">
+<title>受験ナビ</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{--bg:#f6f7fb;--card:#fff;--text:#222;--sub:#667;--line:#e3e5ee;--accent:#4f6bed;--accent2:#ef7b5c;--ok:#2e9e6a;--ng:#d14b4b}
+@media (prefers-color-scheme: dark){:root{--bg:#15171e;--card:#1f222b;--text:#eee;--sub:#99a;--line:#333846;--accent:#7b93ff}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--text);font-family:"Hiragino Sans","Yu Gothic UI",Meiryo,sans-serif;padding-bottom:calc(72px + env(safe-area-inset-bottom))}
+header{padding:14px 16px 4px;display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:6px;max-width:960px;margin:0 auto}
+header h1{font-size:20px;margin:0}
+header .cd{font-size:13px;color:var(--sub)}
+main{max-width:960px;margin:0 auto;padding:8px 16px}
+nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--card);border-top:1px solid var(--line);z-index:10;padding-bottom:env(safe-area-inset-bottom)}
+nav button{flex:1;border:0;background:none;padding:8px 2px 10px;font-size:11px;color:var(--sub);cursor:pointer}
+nav button .i{display:block;font-size:20px}
+nav button.on{color:var(--accent);font-weight:bold}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px;margin:10px 0}
+h2{font-size:17px;margin:4px 0 8px}
+h3{font-size:15px;margin:14px 0 6px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+.sbtn{border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:12px;padding:14px 8px;font-size:14px;cursor:pointer;text-align:center}
+.sbtn:hover,.sbtn.on{border-color:var(--accent);color:var(--accent)}
+.sbtn small{display:block;color:var(--sub);font-size:11px;margin-top:4px}
+.muted{color:var(--sub);font-size:13px}
+.soon{display:inline-block;background:var(--accent2);color:#fff;border-radius:6px;padding:1px 6px;font-size:11px;margin-left:6px;vertical-align:middle}
+a{color:var(--accent)}
+input,select,textarea{font:inherit;font-size:16px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--text);max-width:100%}
+button.b{background:var(--accent);color:#fff;border:0;border-radius:8px;padding:8px 14px;cursor:pointer;font-size:14px}
+button.g{background:none;border:1px solid var(--line);color:var(--text);border-radius:8px;padding:6px 10px;cursor:pointer;font-size:13px}
+button.x{background:none;border:0;color:var(--ng);cursor:pointer;font-size:14px}
+.row{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:6px 0}
+.tw{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th,td{border-bottom:1px solid var(--line);padding:6px;text-align:center;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}
+.pass{color:var(--ok);font-weight:bold}.fail{color:var(--ng);font-weight:bold}
+.todo{display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px dashed var(--line)}
+.todo.done span{text-decoration:line-through;color:var(--sub)}
+.todo span{flex:1}
+.sub-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}
+.sub-tabs button{border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:20px;padding:5px 12px;cursor:pointer;font-size:13px}
+.sub-tabs button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.ev{display:flex;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);font-size:14px;align-items:center}
+.tag{font-size:11px;border-radius:6px;padding:1px 6px;color:#fff;white-space:nowrap}
+.t-school{background:#4f6bed}.t-jishu{background:#2e9e6a}.t-other{background:#999}.t-gcal{background:#ef7b5c}
+.hidden{display:none!important}
+.next{background:linear-gradient(135deg,#4f6bed,#7b5cef);color:#fff;border:0}
+.next .big{font-size:28px;font-weight:bold}
+.qcard{text-align:center;padding:24px 12px}
+.qcard .q{font-size:20px;margin:12px 0 18px;line-height:1.6}
+.qcard .a{font-size:18px;color:var(--accent);font-weight:bold;margin:10px 0}
+.qcard .ex{font-size:13px;color:var(--sub)}
+.qbtns{display:flex;gap:10px;justify-content:center;margin-top:16px}
+.qbtns button{font-size:18px;padding:12px 28px;border-radius:12px;border:0;color:#fff;cursor:pointer}
+.ok{background:var(--ok)}.ng{background:var(--ng)}
+.bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden}.bar i{display:block;height:100%;background:var(--accent)}
+#login{max-width:360px;margin:15vh auto;text-align:center;padding:0 16px}
+#login input{font-size:24px;text-align:center;letter-spacing:8px;width:180px}
+#sync{position:fixed;top:8px;right:8px;font-size:12px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:2px 8px;color:var(--sub)}
+</style>
+</head>
+<body>
+<div id="login">
+  <h1>🌸 受験ナビ</h1>
+  <p class="muted">パスワードを入力してね</p>
+  <input id="pw" type="password" inputmode="numeric" autocomplete="current-password" maxlength="8">
+  <div style="margin-top:12px"><button class="b" id="loginBtn">ひらく</button></div>
+  <p class="muted" id="loginMsg"></p>
+</div>
+
+<div id="app" class="hidden">
+  <div id="sync"></div>
+  <header>
+    <h1 id="title">🌸 受験ナビ</h1>
+    <div class="cd" id="countdown"></div>
+  </header>
+  <main>
+    <section id="tab-school"></section>
+    <section id="tab-ielts" class="hidden"></section>
+    <section id="tab-kyotsu" class="hidden"></section>
+    <section id="tab-record" class="hidden"></section>
+    <section id="tab-info" class="hidden"></section>
+  </main>
+  <nav>
+    <button data-tab="school" class="on"><span class="i">📚</span>定期テスト</button>
+    <button data-tab="ielts"><span class="i">🌍</span>IELTS</button>
+    <button data-tab="kyotsu"><span class="i">🎯</span>共通テスト</button>
+    <button data-tab="record"><span class="i">📈</span>成績</button>
+    <button data-tab="info"><span class="i">📅</span>Info</button>
+  </nav>
+</div>
+
+<script>
+// ===== 設定 =====
+const API = "https://script.google.com/macros/s/AKfycbznBKX6lJgRgamCGfco9nRSzC3EET2pfI6mM79XjkVqDZj2ThZkwkKFpAcnmz9TB3o4Eg/exec";
+const DRIVE = {
+  ielts: "1EnyaRj0QMfQXKicInfWUrfxXIQrHFs9I",
+  kyotsu: "1glSSGQGMR8foG5S6x8dgo2sixQHrl2wT",
+  record: "1i4hUu34M8jdk-VDEoR0XR8nEAhBuRb_S",
+  recTest: "1ijpCIeKRxVHH32bwUk0iNE-CFW4AoOE1",
+  recMoshi: "1nGVof_IEqdF6SKl9EJ0fz-ZLJ4ME65k9",
+  recEiken: "1Pw6QYK6K4pKep1Jv_fa6SQBLRjEnQksN",
+  recIelts: "17e2Oz7rrBmV1sDeiWZ1cpwpJXbCfBIsJ",
+  calSchool: "1lfj7OmKwEGau1vM-sMNNqT4nnUrCobnP",
+  calJishu: "1FtxI97OR__0dCNeSbZTJKuwSTLCQqI3L",
+  sheet: "15XzDSWNqT49h-D4K4WpXGoIJ9wPE3aMTzbdItWi95hM",
+};
+const driveUrl = id => `https://drive.google.com/drive/folders/${id}`;
+const sheetUrl = `https://docs.google.com/spreadsheets/d/${DRIVE.sheet}/edit`;
+
+const FOLDERS = {
+  "英語コミュ":"1Ha4nEf0io03Rr0ayr9ajJ8waknQEoctY", "論理・表現":"1xgbFKXZG7tvzlqkqWoW8_9HAv-wqiqo4",
+  "数学I":"1kshZORnHh9iamhfM8c9fxKSap7QRMJNY", "数学A":"1x6N87SEtsVg1cSEvxKZavmPR1Ihvx4JY",
+  "現代の国語":"1b0hvr8Hy9dx88y1LgzEhJKz83fewzsUM", "言語文化":"1aj4ndkPDs-sWk_jVeCZDSZgrpZgUKl4u",
+  "公共":"1scyFpz7c2EPRJWwkY4Fn9c97vfJBPlbE", "歴史総合":"19KpPsGPBB3MP5HItRCwm8gpfbof0WKxE",
+  "情報I":"1979FKVrKUgnVbCOYd1PWjbfgNrGf58DX", "生物基礎":"1SMVeNnGxQxhJjseF7Afe1Ic6PfL2nxwW",
+  "物理基礎":"1DuhlbyJ__xH0YL39mLpO7kRDW_e7X8V-",
+};
+const NOTES = {"物理基礎":"共通テストでは使用しない予定"};
+const KYOTSU = ["英語","数学","国語","歴史総合・日本史探究","公共・政治経済","情報I","化学基礎・生物基礎"];
+const KYOTSU_DATE = new Date("2029-01-13T09:00:00+09:00"); // 目安（例年1月中旬の土日）
+
+// ===== 共通 =====
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const today = () => new Date(Date.now() + 9*3600e3).toISOString().slice(0,10);
+const daysTo = d => Math.ceil((new Date(d + "T00:00:00+09:00") - Date.now()) / 864e5);
+const num = v => v === "" || v == null || isNaN(Number(v)) ? null : Number(v);
+const store = { get(k){ try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
+                set(k,v){ try { localStorage.setItem(k, JSON.stringify(v)); } catch {} } };
+
+// ===== データ（スプレッドシート ⇔ アプリ） =====
+// S[シート名] = {headers, rows:[{見出し:値}]}
+let S = {}, EVENTS = [], PWD = "";
+async function api(body){
+  const r = await fetch(API, {method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"}, body:JSON.stringify({pw:PWD, ...body})});
+  return r.json();
+}
+function fromRaw(raw){
+  const o = {};
+  for (const [name, {headers, rows}] of Object.entries(raw))
+    o[name] = {headers, rows: rows.map(r => Object.fromEntries(headers.map((h,i) => [h, r[i] ?? ""])))};
+  return o;
+}
+const T = name => S[name]?.rows || [];
+const timers = {};
+function save(name){
+  store.set("cache", {sheets:S, events:EVENTS});
+  clearTimeout(timers[name]);
+  setSync("保存待ち…");
+  timers[name] = setTimeout(async () => {
+    const {headers, rows} = S[name];
+    try {
+      const r = await api({action:"save", sheet:name, rows: rows.map(o => headers.map(h => o[h] ?? ""))});
+      setSync(r.ok ? "✓ 保存しました" : "⚠ 保存失敗", !r.ok);
+    } catch { setSync("⚠ オフライン（保存できません）", true); }
+  }, 800);
+}
+function setSync(t, keep){ const el = $("#sync"); el.textContent = t; el.classList.remove("hidden"); if (!keep) setTimeout(() => el.classList.add("hidden"), 2500); }
+
+// ===== ログイン =====
+async function login(pw){
+  PWD = pw; $("#loginMsg").textContent = "読み込み中…";
+  try {
+    const r = await api({action:"load"});
+    if (!r.ok) { $("#loginMsg").textContent = r.error === "locked" ? "しばらく待ってからやり直してね" : "パスワードがちがいます"; store.set("pw", null); return; }
+    S = fromRaw(r.sheets); EVENTS = r.events || [];
+    store.set("pw", pw); store.set("cache", {sheets:S, events:EVENTS});
+    start();
+  } catch {
+    const c = store.get("cache");
+    if (c && store.get("pw") === pw) { S = c.sheets; EVENTS = c.events || []; start(); setSync("⚠ オフライン表示中", true); }
+    else $("#loginMsg").textContent = "通信エラー。ネット接続を確認してね";
+  }
+}
+$("#loginBtn").onclick = () => login($("#pw").value);
+$("#pw").onkeydown = e => { if (e.key === "Enter") login($("#pw").value); };
+if (store.get("pw")) login(store.get("pw"));
+
+function start(){
+  $("#login").classList.add("hidden"); $("#app").classList.remove("hidden");
+  $("#title").textContent = "🌸 詩の受験ナビ";
+  $("#countdown").textContent = `共通テストまで あと約 ${daysTo(KYOTSU_DATE.toISOString().slice(0,10))} 日`;
+  RENDER[cur]();
+}
+
+// ===== タブ =====
+let cur = "school";
+document.querySelectorAll("nav button").forEach(b => b.onclick = () => {
+  cur = b.dataset.tab;
+  document.querySelectorAll("nav button").forEach(x => x.classList.toggle("on", x === b));
+  document.querySelectorAll("main section").forEach(s => s.classList.toggle("hidden", s.id !== "tab-" + cur));
+  RENDER[cur]();
+});
+
+// 学年1の科目・テスト
+const subjects = () => T("定期テスト").filter(r => String(r["学年"]) === "1").map(r => r["教科"]);
+const tests = () => (S["定期テスト"]?.headers || []).slice(2);
+const na = (subj, test) => T("定期テスト").find(r => r["教科"] === subj)?.[test] === "-";
+function nextTest(){
+  const t = today();
+  return T("テスト日程").filter(r => r["終了日"] >= t).sort((a,b) => a["開始日"].localeCompare(b["開始日"]))[0];
+}
+
+// ===== ① 定期テスト =====
+let curSubj = null, quiz = null;
+function renderSchool(){
+  const el = $("#tab-school");
+  if (quiz) return renderQuiz();
+  const nt = nextTest();
+  const todos = T("やること");
+  el.innerHTML = `
+    ${nt ? `<div class="card next"><div>次のテスト：<b>${esc(nt["テスト"])}</b>（${esc(nt["開始日"].slice(5).replace("-","/"))}〜${esc(nt["終了日"].slice(5).replace("-","/"))}）</div>
+      <div class="big">${daysTo(nt["開始日"]) > 0 ? `あと ${daysTo(nt["開始日"])} 日` : "テスト期間中！がんばれ！"}</div>
+      <div style="font-size:13px;margin-top:4px">🏫 今日の自習室：${esc(jishuText(jishu(today())))}</div></div>` : ""}
+    <div class="card">
+      <h2>📚 向上高校 定期テスト対策（1年）</h2>
+      <div class="grid">${subjects().map(s => {
+        const td = todos.filter(t => t["教科"] === s), qs = T("問題").filter(q => q["教科"] === s);
+        return `<button class="sbtn ${curSubj===s?"on":""}" data-s="${esc(s)}">${esc(s)}
+          <small>${na(s, tests()[0]) ? "期末のみ" : "中間・期末"}${td.length ? ` ／ ✅${td.filter(t=>t["完了"]==="TRUE").length}/${td.length}` : ""}${qs.length ? ` ／ 🧠${qs.length}` : ""}</small></button>`;
+      }).join("")}</div>
+    </div>
+    <div id="subjDetail"></div>`;
+  el.querySelectorAll(".sbtn").forEach(b => b.onclick = () => { curSubj = b.dataset.s; renderSchool(); $("#subjDetail").scrollIntoView({behavior:"smooth"}); });
+  if (curSubj) renderSubject();
+}
+function renderSubject(){
+  const s = curSubj, box = $("#subjDetail");
+  const todos = T("やること").filter(t => t["教科"] === s);
+  const memo = T("範囲メモ").find(m => m["教科"] === s);
+  const qs = T("問題").filter(q => q["教科"] === s);
+  const units = [...new Set(qs.map(q => q["単元"]).filter(Boolean))];
+  const scoreRow = T("定期テスト").find(r => r["教科"] === s) || {};
+  const tried = qs.filter(q => num(q["出題数"]) > 0);
+  const rate = tried.length ? Math.round(100 * tried.reduce((a,q)=>a+num(q["正解数"]),0) / tried.reduce((a,q)=>a+num(q["出題数"]),0)) : null;
+  box.innerHTML = `
+    <div class="card">
+      <h2>${esc(s)}</h2>
+      <p class="muted">${na(s, tests()[0]) ? "※ 期末テストのみ実施" : "中間テスト・期末テスト"}${NOTES[s] ? "　※ " + NOTES[s] : ""}
+        ／ <a href="${driveUrl(FOLDERS[s])}" target="_blank" rel="noopener">📁 教材フォルダ</a></p>
+
+      <h3>🧠 一問一答（${qs.length}問${rate !== null ? `・正答率 ${rate}%` : ""}）</h3>
+      ${qs.length ? `<div class="row">
+        <select id="qUnit"><option value="">すべての単元</option>${units.map(u=>`<option>${esc(u)}</option>`).join("")}</select>
+        <select id="qMode"><option value="weak">苦手を優先</option><option value="random">ランダム</option><option value="new">まだ解いてない問題</option></select>
+        <select id="qNum"><option>10</option><option>20</option><option value="999">全部</option></select>
+        <button class="b" id="qStart">スタート</button></div>` : '<p class="muted">まだ問題がありません。下の「問題を追加」から作ってね。</p>'}
+      <details><summary class="muted">＋ 問題を追加・まとめて貼り付け</summary>
+        <div class="row"><input id="nUnit" placeholder="単元" style="width:110px"><input id="nQ" placeholder="問題" style="flex:1"></div>
+        <div class="row"><input id="nA" placeholder="答え" style="flex:1"><input id="nE" placeholder="解説（任意）" style="flex:1"><button class="b" id="nAdd">追加</button></div>
+        <p class="muted">まとめて追加：1行に「問題｜答え」または「単元｜問題｜答え｜解説」（区切りは ｜ か タブ）</p>
+        <textarea id="bulk" rows="4" style="width:100%" placeholder="例：cell｜細胞"></textarea>
+        <button class="g" id="bulkAdd">まとめて追加</button>
+        <p class="muted">問題の編集・削除は <a href="${sheetUrl}" target="_blank" rel="noopener">スプレッドシートの「問題」シート</a> から。</p>
+      </details>
+
+      <h3>📝 テスト範囲メモ</h3>
+      <textarea id="memo" rows="3" style="width:100%" placeholder="例：教科書 p.20〜58、ワーク Lesson3〜5">${esc(memo?.["メモ"] || "")}</textarea>
+
+      <h3>✅ やることリスト</h3>
+      <div>${todos.map(t => `
+        <div class="todo ${t["完了"]==="TRUE"?"done":""}"><input type="checkbox" data-i="${T("やること").indexOf(t)}" ${t["完了"]==="TRUE"?"checked":""}><span>${esc(t["内容"])}</span><button class="x" data-del="${T("やること").indexOf(t)}">✕</button></div>`).join("") || '<p class="muted">まだありません</p>'}</div>
+      <div class="row"><input id="todoIn" placeholder="例：ワーク2周目" style="flex:1"><button class="b" id="todoAdd">追加</button></div>
+
+      <h3>📊 これまでの点数</h3>
+      <div class="tw"><table><tr>${tests().map(t=>`<th>${esc(t)}</th>`).join("")}</tr>
+        <tr>${tests().map(t=>`<td>${na(s,t) ? "—" : esc(scoreRow[t] || "")}</td>`).join("")}</tr></table></div>
+    </div>`;
+
+  // 一問一答
+  if (qs.length) $("#qStart").onclick = () => {
+    let pool = qs.filter(q => !$("#qUnit").value || q["単元"] === $("#qUnit").value);
+    const mode = $("#qMode").value;
+    const r = q => num(q["出題数"]) ? num(q["正解数"]) / num(q["出題数"]) : -1;
+    pool = pool.map(q => [q, Math.random()]).sort((a,b) => a[1]-b[1]).map(x => x[0]);
+    if (mode === "weak") pool.sort((a,b) => r(a) - r(b));
+    if (mode === "new") pool = pool.filter(q => !num(q["出題数"]));
+    pool = pool.slice(0, Number($("#qNum").value));
+    if (!pool.length) return alert("該当する問題がありません");
+    quiz = {list: pool, i: 0, show: false, ok: 0};
+    renderSchool(); window.scrollTo(0,0);
+  };
+  const addQs = list => {
+    const rows = S["問題"].rows;
+    let n = rows.reduce((m,q) => Math.max(m, parseInt(String(q["ID"]).slice(1)) || 0), 0);
+    list.forEach(([u,q,a,e]) => rows.push({"ID":"q"+String(++n).padStart(3,"0"),"教科":s,"単元":u||"","問題":q,"答え":a,"解説":e||"","正解数":"0","出題数":"0","最終学習日":""}));
+    save("問題"); renderSchool();
+  };
+  $("#nAdd").onclick = () => { if (!$("#nQ").value || !$("#nA").value) return alert("問題と答えを入れてね"); addQs([[$("#nUnit").value,$("#nQ").value,$("#nA").value,$("#nE").value]]); };
+  $("#bulkAdd").onclick = () => {
+    const list = $("#bulk").value.split("\n").map(l => l.split(/[｜|\t]/).map(x => x.trim())).filter(p => p.length >= 2 && p[0]);
+    if (!list.length) return;
+    addQs(list.map(p => p.length === 2 ? ["",p[0],p[1],""] : [p[0],p[1],p[2]||"",p[3]||""]));
+  };
+
+  // メモ・やること
+  $("#memo").onchange = e => {
+    const rows = S["範囲メモ"].rows, m = rows.find(x => x["教科"] === s);
+    if (m) m["メモ"] = e.target.value; else rows.push({"教科":s,"メモ":e.target.value});
+    save("範囲メモ");
+  };
+  box.querySelectorAll("input[type=checkbox]").forEach(c => c.onchange = () => { T("やること")[c.dataset.i]["完了"] = c.checked ? "TRUE" : "FALSE"; save("やること"); renderSchool(); });
+  box.querySelectorAll("[data-del]").forEach(b => b.onclick = () => { S["やること"].rows.splice(b.dataset.del,1); save("やること"); renderSchool(); });
+  const add = () => { const v = $("#todoIn").value.trim(); if (!v) return; S["やること"].rows.push({"教科":s,"内容":v,"完了":"FALSE"}); save("やること"); renderSchool(); };
+  $("#todoAdd").onclick = add;
+  $("#todoIn").onkeydown = e => { if (e.key === "Enter" && !e.isComposing) add(); };
+}
+function renderQuiz(){
+  const el = $("#tab-school"), q = quiz.list[quiz.i];
+  if (!q) {
+    const pct = Math.round(100 * quiz.ok / quiz.list.length);
+    el.innerHTML = `<div class="card qcard"><h2>おつかれさま！</h2><div class="q">${quiz.ok} / ${quiz.list.length} 問正解（${pct}%）</div>
+      <p>${pct >= 80 ? "🎉 すばらしい！" : pct >= 50 ? "👍 いい調子！まちがえた問題をもう一度やろう" : "💪 苦手な問題を何回もくり返そう"}</p>
+      <div class="qbtns"><button class="b" id="qBack">もどる</button></div></div>`;
+    $("#qBack").onclick = () => { quiz = null; renderSchool(); };
+    return;
+  }
+  el.innerHTML = `<div class="card qcard">
+    <div class="row" style="justify-content:space-between"><span class="muted">${esc(q["教科"])} ${q["単元"] ? "／ " + esc(q["単元"]) : ""}</span><span class="muted">${quiz.i+1} / ${quiz.list.length}</span></div>
+    <div class="bar"><i style="width:${100*quiz.i/quiz.list.length}%"></i></div>
+    <div class="q">${esc(q["問題"])}</div>
+    ${quiz.show ? `<div class="a">${esc(q["答え"])}</div>${q["解説"] ? `<div class="ex">${esc(q["解説"])}</div>` : ""}
+      <div class="qbtns"><button class="ok" id="qOk">○ 正解</button><button class="ng" id="qNg">× まちがい</button></div>`
+      : `<div class="qbtns"><button class="b" id="qShow" style="font-size:18px;padding:12px 28px">答えを見る</button></div>`}
+    <p style="margin-top:18px"><button class="g" id="qQuit">やめる</button></p></div>`;
+  const mark = ok => {
+    q["出題数"] = String((num(q["出題数"]) || 0) + 1);
+    if (ok) { q["正解数"] = String((num(q["正解数"]) || 0) + 1); quiz.ok++; }
+    q["最終学習日"] = today();
+    quiz.i++; quiz.show = false; save("問題"); renderQuiz();
+  };
+  if (quiz.show) { $("#qOk").onclick = () => mark(true); $("#qNg").onclick = () => mark(false); }
+  else $("#qShow").onclick = () => { quiz.show = true; renderQuiz(); };
+  $("#qQuit").onclick = () => { quiz = null; renderSchool(); };
+}
+
+// ===== ② IELTS =====
+function renderIelts(){
+  $("#tab-ielts").innerHTML = `
+    <div class="card">
+      <h2>🌍 IELTS<span class="soon">準備中</span></h2>
+      <p>英検準1級に合格したらスタート予定！</p>
+      <div class="grid">${["Listening","Reading","Writing","Speaking"].map(x=>`<button class="sbtn" disabled>${x}<small>準備中</small></button>`).join("")}</div>
+      <p class="muted" style="margin-top:12px"><a href="${driveUrl(DRIVE.ielts)}" target="_blank" rel="noopener">📁 IELTS教材フォルダ</a></p>
+    </div>`;
+}
+
+// ===== ③ 共通テスト =====
+function renderKyotsu(){
+  $("#tab-kyotsu").innerHTML = `
+    <div class="card">
+      <h2>🎯 共通テスト対策<span class="soon">準備中</span></h2>
+      <p class="muted">受験予定科目（2029年1月 受験予定）</p>
+      <div class="grid">${KYOTSU.map(x=>`<button class="sbtn" data-k="${esc(x)}">${x}<small>準備中</small></button>`).join("")}</div>
+      <p class="muted" style="margin-top:12px"><a href="${driveUrl(DRIVE.kyotsu)}" target="_blank" rel="noopener">📁 共通テスト過去問フォルダ</a></p>
+    </div>`;
+  $("#tab-kyotsu").querySelectorAll("[data-k]").forEach(b => b.onclick = () => alert(`「${b.dataset.k}」の対策ページは準備中です`));
+}
+
+// ===== ④ 成績 =====
+let recTab = "test", charts = [];
+function chart(id, cfg){ const c = document.getElementById(id); if (c && window.Chart) charts.push(new Chart(c, cfg)); }
+const legend = {labels:{boxWidth:10,font:{size:10}}};
+function renderRecord(){
+  charts.forEach(c => c.destroy()); charts = [];
+  const tabs = {test:"定期テスト", moshi:"模試", eiken:"英検", ielts:"IELTS"};
+  $("#tab-record").innerHTML = `
+    <div class="sub-tabs">${Object.entries(tabs).map(([k,v])=>`<button data-r="${k}" class="${recTab===k?"on":""}">${v}</button>`).join("")}</div>
+    <div id="recBody"></div>
+    <p class="muted">データは <a href="${sheetUrl}" target="_blank" rel="noopener">受験ナビ_データ（スプレッドシート）</a> に保存されます。答案や成績表の画像・PDFは <a href="${driveUrl(DRIVE.record)}" target="_blank" rel="noopener">📁 成績記録フォルダ</a> へ。</p>`;
+  $("#tab-record").querySelectorAll("[data-r]").forEach(b => b.onclick = () => { recTab = b.dataset.r; renderRecord(); });
+  ({test:recTest, moshi:recMoshi, eiken:recEiken, ielts:recIelts})[recTab]();
+}
+function recTest(){
+  const rows = T("定期テスト").filter(r => String(r["学年"]) === "1"), ts = tests();
+  const avg = t => { const v = rows.map(r => num(r[t])).filter(x => x !== null); return v.length ? (v.reduce((a,b)=>a+b,0)/v.length).toFixed(1) : ""; };
+  $("#recBody").innerHTML = `
+    <div class="card"><h2>📝 定期テスト結果（1年）</h2>
+      <p class="muted">点数を入力すると自動で保存されます。 <a href="${driveUrl(DRIVE.recTest)}" target="_blank" rel="noopener">📁 答案フォルダ</a></p>
+      <div class="tw"><table><tr><th>教科</th>${ts.map(t=>`<th>${esc(t)}</th>`).join("")}</tr>
+      ${rows.map(r=>`<tr><td>${esc(r["教科"])}</td>${ts.map(t => r[t] === "-" ? "<td>—</td>" :
+        `<td><input type="number" inputmode="numeric" min="0" max="100" style="width:64px" data-t="${esc(t)}" data-s="${esc(r["教科"])}" value="${esc(r[t])}"></td>`).join("")}</tr>`).join("")}
+      <tr><th>平均</th>${ts.map(t=>`<th>${avg(t)}</th>`).join("")}</tr></table></div>
+    </div>
+    <div class="card"><h3>推移グラフ</h3><canvas id="cTest" height="260"></canvas></div>`;
+  $("#recBody").querySelectorAll("input[data-t]").forEach(i => i.onchange = () => {
+    rows.find(r => r["教科"] === i.dataset.s)[i.dataset.t] = i.value; save("定期テスト"); renderRecord();
+  });
+  chart("cTest", {type:"line", data:{labels:ts, datasets:rows.map(r=>({label:r["教科"], spanGaps:true, data:ts.map(t=>num(r[t]))}))},
+    options:{scales:{y:{min:0,max:100}},plugins:{legend}}});
+}
+function recMoshi(){
+  const rows = T("模試"), cols = (S["模試"]?.headers || []).slice(2);
+  $("#recBody").innerHTML = `
+    <div class="card"><h2>📊 模試結果（偏差値）</h2>
+      <p class="muted"><a href="${driveUrl(DRIVE.recMoshi)}" target="_blank" rel="noopener">📁 模試成績表フォルダ</a></p>
+      <div class="tw"><table><tr><th>日付</th><th>模試名</th>${cols.map(k=>`<th>${esc(k)}</th>`).join("")}<th></th></tr>
+      ${rows.map((m,i)=>`<tr><td>${esc(m["日付"])}</td><td>${esc(m["模試名"])}</td>${cols.map(k=>`<td>${esc(m[k])}</td>`).join("")}<td><button class="x" data-del="${i}">✕</button></td></tr>`).join("") || `<tr><td colspan="${cols.length+3}" class="muted">まだ記録はありません</td></tr>`}
+      </table></div>
+      <h3>追加</h3>
+      <div class="row"><input type="date" id="mDate"><input id="mName" placeholder="模試名（例：進研模試 1月）" style="flex:1"></div>
+      <div class="row">${cols.map(k=>`<input type="number" step="0.1" inputmode="decimal" placeholder="${esc(k)}" data-k="${esc(k)}" style="width:140px">`).join("")}</div>
+      <button class="b" id="mAdd">追加</button>
+    </div>
+    ${rows.length ? `<div class="card"><h3>偏差値の推移</h3><canvas id="cMoshi" height="260"></canvas></div>` : ""}`;
+  $("#recBody").querySelectorAll("[data-del]").forEach(b => b.onclick = () => { if (confirm("削除しますか？")) { rows.splice(b.dataset.del,1); save("模試"); renderRecord(); } });
+  $("#mAdd").onclick = () => {
+    if (!$("#mName").value) return alert("模試名を入れてね");
+    const o = {"日付":$("#mDate").value, "模試名":$("#mName").value};
+    $("#recBody").querySelectorAll("input[data-k]").forEach(i => o[i.dataset.k] = i.value);
+    rows.push(o); rows.sort((a,b)=>a["日付"].localeCompare(b["日付"])); save("模試"); renderRecord();
+  };
+  chart("cMoshi", {type:"line", data:{labels:rows.map(m=>m["模試名"]), datasets:cols.map(k=>({label:k, spanGaps:true, data:rows.map(m=>num(m[k]))}))},
+    options:{scales:{y:{suggestedMin:40,suggestedMax:70}},plugins:{legend}}});
+}
+function recEiken(){
+  const rows = T("英検");
+  const last = [...rows].reverse().find(e => e["級"] === "準1級");
+  $("#recBody").innerHTML = `
+    ${last && last["結果"] !== "合格" ? `<div class="card next"><div>🎯 次の目標：<b>英検準1級 合格</b></div>
+      <div style="font-size:14px;margin-top:6px">${esc(last["メモ"])}</div></div>` : ""}
+    <div class="card"><h2>🏅 英検の記録</h2>
+      <p class="muted"><a href="${driveUrl(DRIVE.recEiken)}" target="_blank" rel="noopener">📁 英検結果フォルダ</a></p>
+      <div class="tw"><table><tr><th>級</th><th>受験日</th><th>R</th><th>L</th><th>W</th><th>S</th><th>総合CSE</th><th>結果</th><th></th></tr>
+      ${rows.map((e,i)=>`<tr><td>${esc(e["級"])}<br><span class="muted">${esc(e["方式"])}</span></td><td>${esc(e["受験日"] || e["回"])}</td>
+        <td>${esc(e["Reading"])}</td><td>${esc(e["Listening"])}</td><td>${esc(e["Writing"])}</td><td>${esc(e["Speaking"])}</td>
+        <td>${e["総合スコア"] ? `${esc(e["総合スコア"])}<span class="muted">/${esc(e["満点"])}</span>` : ""}</td>
+        <td class="${e["結果"]==="合格"?"pass":"fail"}">${esc(e["結果"])}</td><td><button class="x" data-del="${i}">✕</button></td></tr>
+        ${e["メモ"] ? `<tr><td colspan="9" class="muted" style="white-space:normal;text-align:left">${esc(e["メモ"])}</td></tr>` : ""}`).join("")}
+      </table></div>
+      <h3>追加</h3>
+      <div class="row"><select id="eG">${["準1級","1級","2級","準2級プラス","準2級","3級"].map(g=>`<option>${g}</option>`).join("")}</select>
+        <select id="eM"><option>S-CBT</option><option>従来型</option></select><input type="date" id="eD">
+        <select id="eR"><option>合格</option><option>不合格</option></select></div>
+      <div class="row">${["Reading","Listening","Writing","Speaking"].map(k=>`<input type="number" inputmode="numeric" placeholder="${k}" data-k="${k}" style="width:100px">`).join("")}
+        <button class="b" id="eAdd">追加</button></div>
+    </div>
+    <div class="card"><h3>技能別CSEスコアの推移</h3><canvas id="cEiken" height="240"></canvas></div>`;
+  $("#recBody").querySelectorAll("[data-del]").forEach(b => b.onclick = () => { if (confirm("削除しますか？")) { rows.splice(b.dataset.del,1); save("英検"); renderRecord(); } });
+  $("#eAdd").onclick = () => {
+    const o = {"級":$("#eG").value,"方式":$("#eM").value,"受験日":$("#eD").value,"結果":$("#eR").value};
+    $("#recBody").querySelectorAll("input[data-k]").forEach(i => o[i.dataset.k] = i.value);
+    const sc = ["Reading","Listening","Writing","Speaking"].map(k => num(o[k])).filter(x => x !== null);
+    o["総合スコア"] = sc.length === 4 ? String(sc.reduce((a,b)=>a+b,0)) : "";
+    o["満点"] = {"準1級":"3000","1級":"3400","2級":"2600","準2級プラス":"2500","準2級":"2400","3級":"2200"}[o["級"]];
+    rows.push(o); save("英検"); renderRecord();
+  };
+  const pts = rows.filter(e => e["Reading"]);
+  chart("cEiken", {type:"bar", data:{labels:pts.map(e=>e["級"]),
+    datasets:["Reading","Listening","Writing","Speaking"].map(k=>({label:k, data:pts.map(e=>num(e[k]))}))},
+    options:{scales:{x:{stacked:true},y:{stacked:true}},plugins:{legend,tooltip:{callbacks:{footer:it=>{const e=pts[it[0].dataIndex];return `${e["受験日"]||e["回"]} ${e["結果"]}`;}}}}}});
+}
+function recIelts(){
+  const rows = T("IELTS"), f = ["Overall","Listening","Reading","Writing","Speaking"];
+  $("#recBody").innerHTML = `
+    <div class="card"><h2>🌍 IELTSの記録</h2>
+      <p class="muted"><a href="${driveUrl(DRIVE.recIelts)}" target="_blank" rel="noopener">📁 IELTS結果フォルダ</a></p>
+      <div class="tw"><table><tr><th>受験日</th>${f.map(k=>`<th>${k}</th>`).join("")}<th></th></tr>
+      ${rows.map((r,i)=>`<tr><td>${esc(r["受験日"])}</td>${f.map(k=>`<td>${esc(r[k])}</td>`).join("")}<td><button class="x" data-del="${i}">✕</button></td></tr>`).join("") || `<tr><td colspan="7" class="muted">まだ記録はありません</td></tr>`}
+      </table></div>
+      <div class="row"><input type="date" id="iD">${f.map(k=>`<input type="number" step="0.5" min="0" max="9" inputmode="decimal" placeholder="${k}" data-k="${k}" style="width:100px">`).join("")}<button class="b" id="iAdd">追加</button></div>
+    </div>`;
+  $("#recBody").querySelectorAll("[data-del]").forEach(b => b.onclick = () => { rows.splice(b.dataset.del,1); save("IELTS"); renderRecord(); });
+  $("#iAdd").onclick = () => { const o = {"受験日":$("#iD").value}; $("#recBody").querySelectorAll("input[data-k]").forEach(i => o[i.dataset.k] = i.value); rows.push(o); save("IELTS"); renderRecord(); };
+}
+
+// ===== ⑤ Info =====
+const CATS = {"向上高校":"school", "自習室":"jishu", "その他":"other"};
+const jishu = d => T("自習室").find(r => r["日付"] === d);
+const jishuText = r => r ? `${r["開室時間"]}${r["備考"] ? "（" + r["備考"] + "）" : ""}` : "情報なし";
+function renderInfo(){
+  const t = today();
+  const week = Array.from({length:7}, (_,i) => new Date(Date.now() + 9*3600e3 + i*864e5).toISOString().slice(0,10));
+  const wd = d => "日月火水木金土"[new Date(d + "T00:00:00+09:00").getDay()];
+  const mine = T("予定").map((e,i) => ({date:e["日付"], title:e["内容"], cat:e["区分"], idx:i}));
+  const tests = T("テスト日程").map(r => ({date:r["開始日"], end:r["終了日"], title:r["テスト"], cat:"向上高校"}));
+  const gc = EVENTS.map(e => ({...e, cat:"Google"}));
+  const all = [...mine, ...tests, ...gc].filter(e => (e.end || e.date) >= t).sort((a,b) => (a.date + (a.time||"")).localeCompare(b.date + (b.time||"")));
+  const md = d => d ? d.slice(5).replace("-","/") : "";
+  const evRow = e => `<div class="ev"><span style="width:96px">${md(e.date)}${e.end && e.end !== e.date ? "〜" + md(e.end) : ""}${e.time ? " " + e.time : ""}</span>
+    <span class="tag t-${CATS[e.cat] || "gcal"}">${esc(e.cat === "Google" ? e.cal : e.cat)}</span><span style="flex:1">${esc(e.title)}</span>
+    ${e.idx !== undefined ? `<button class="x" data-del="${e.idx}">✕</button>` : ""}</div>`;
+  $("#tab-info").innerHTML = `
+    <div class="card"><h2>🏫 自習室の開室時間</h2>
+      ${week.map(d => `<div class="ev"><span style="width:96px">${d.slice(5).replace("-","/")}（${wd(d)}）</span><span class="tag t-jishu">自習室</span><span style="flex:1">${esc(jishuText(jishu(d)))}</span></div>`).join("")}
+      <p class="muted">元の予定表は <a href="${driveUrl(DRIVE.calJishu)}" target="_blank" rel="noopener">📁 自習室カレンダー</a></p>
+    </div>
+    <div class="card"><h2>📅 これからの予定</h2>
+      <p class="muted">向上高校のテスト日程・自分で追加した予定・Googleカレンダーの予定をまとめて表示しています。</p>
+      ${all.slice(0, 40).map(evRow).join("") || '<p class="muted">予定はありません</p>'}
+      <h3>予定を追加</h3>
+      <div class="row"><input type="date" id="evD" value="${t}"><select id="evC">${Object.keys(CATS).map(k=>`<option>${k}</option>`).join("")}</select>
+        <input id="evT" placeholder="例：進研模試" style="flex:1"><button class="b" id="evAdd">追加</button></div>
+    </div>
+    <div class="card"><h2>📁 カレンダー資料</h2>
+      <p>学校や自主室から配られた予定表（PDF・写真）はこちら：</p>
+      <div class="row"><a class="g" style="text-decoration:none;padding:8px 12px" href="${driveUrl(DRIVE.calSchool)}" target="_blank" rel="noopener">📁 向上高校カレンダー</a>
+        <a class="g" style="text-decoration:none;padding:8px 12px" href="${driveUrl(DRIVE.calJishu)}" target="_blank" rel="noopener">📁 自習室カレンダー</a>
+        <a class="g" style="text-decoration:none;padding:8px 12px" href="https://calendar.google.com/" target="_blank" rel="noopener">🗓 Googleカレンダー</a></div>
+    </div>`;
+  $("#tab-info").querySelectorAll("[data-del]").forEach(b => b.onclick = () => { S["予定"].rows.splice(b.dataset.del,1); save("予定"); renderInfo(); });
+  $("#evAdd").onclick = () => { const v = $("#evT").value.trim(); if (!v || !$("#evD").value) return; S["予定"].rows.push({"日付":$("#evD").value,"区分":$("#evC").value,"内容":v}); save("予定"); renderInfo(); };
+}
+
+const RENDER = {school:renderSchool, ielts:renderIelts, kyotsu:renderKyotsu, record:renderRecord, info:renderInfo};
+</script>
+</body>
+</html>
