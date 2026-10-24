@@ -121,7 +121,7 @@ const FOLDERS = {
   "現代の国語":"1b0hvr8Hy9dx88y1LgzEhJKz83fewzsUM", "言語文化":"1aj4ndkPDs-sWk_jVeCZDSZgrpZgUKl4u",
   "公共":"1scyFpz7c2EPRJWwkY4Fn9c97vfJBPlbE", "歴史総合":"19KpPsGPBB3MP5HItRCwm8gpfbof0WKxE",
   "情報I":"1979FKVrKUgnVbCOYd1PWjbfgNrGf58DX", "生物基礎":"1SMVeNnGxQxhJjseF7Afe1Ic6PfL2nxwW",
-  "物理基礎":"1DuhlbyJ__xH0YL39mLpO7kRDW_e7X8V-",
+  "物理基礎":"1DuhlbyJ__xH0YL39mLpO7kRDW_e7X8V-", "保健":"1T9zhkIG2oX1pYe6eqHU0NFpAhFWZsZqp",
 };
 const NOTES = {"物理基礎":"共通テストでは使用しない予定"};
 const KYOTSU = ["英語","数学","国語","歴史総合・日本史探究","公共・政治経済","情報I","化学基礎・生物基礎"];
@@ -200,10 +200,14 @@ document.querySelectorAll("nav button").forEach(b => b.onclick = () => {
   RENDER[cur]();
 });
 
-// 学年1の科目・テスト
-const subjects = () => T("定期テスト").filter(r => String(r["学年"]) === "1").map(r => r["教科"]);
-const tests = () => (S["定期テスト"]?.headers || []).slice(2);
-const na = (subj, test) => T("定期テスト").find(r => r["教科"] === subj)?.[test] === "-";
+// 学年・科目・テスト（向上高校は前期/後期制）
+const GRADE = "1";
+const TESTS = ["前期中間①","前期期末","後期中間①","後期中間②","後期期末","後期学年末"];
+const FINAL_ONLY = ["情報I"];
+const subjects = () => Object.keys(FOLDERS);
+const tests = () => TESTS;
+const na = (subj, test) => FINAL_ONLY.includes(subj) && test.includes("中間");
+const score = (subj, test) => T("定期テスト").find(r => String(r["学年"]) === GRADE && r["テスト"] === test && r["教科"] === subj);
 function nextTest(){
   const t = today();
   return T("テスト日程").filter(r => r["終了日"] >= t).sort((a,b) => a["開始日"].localeCompare(b["開始日"]))[0];
@@ -238,7 +242,7 @@ function renderSubject(){
   const memo = T("範囲メモ").find(m => m["教科"] === s);
   const qs = T("問題").filter(q => q["教科"] === s);
   const units = [...new Set(qs.map(q => q["単元"]).filter(Boolean))];
-  const scoreRow = T("定期テスト").find(r => r["教科"] === s) || {};
+  const ts = tests().filter(t => !na(s, t));
   const tried = qs.filter(q => num(q["出題数"]) > 0);
   const rate = tried.length ? Math.round(100 * tried.reduce((a,q)=>a+num(q["正解数"]),0) / tried.reduce((a,q)=>a+num(q["出題数"]),0)) : null;
   box.innerHTML = `
@@ -271,8 +275,8 @@ function renderSubject(){
       <div class="row"><input id="todoIn" placeholder="例：ワーク2周目" style="flex:1"><button class="b" id="todoAdd">追加</button></div>
 
       <h3>📊 これまでの点数</h3>
-      <div class="tw"><table><tr>${tests().map(t=>`<th>${esc(t)}</th>`).join("")}</tr>
-        <tr>${tests().map(t=>`<td>${na(s,t) ? "—" : esc(scoreRow[t] || "")}</td>`).join("")}</tr></table></div>
+      <div class="tw"><table><tr><th></th>${ts.map(t=>`<th>${esc(t)}</th>`).join("")}</tr>
+        ${[["素点","素点"],["平均点","素点平均"],["学年順位","学年順位"]].map(([l,k]) => `<tr><td>${l}</td>${ts.map(t=>`<td>${esc(score(s,t)?.[k] || "")}</td>`).join("")}</tr>`).join("")}</table></div>
     </div>`;
 
   // 一問一答
@@ -371,31 +375,135 @@ function chart(id, cfg){ const c = document.getElementById(id); if (c && window.
 const legend = {labels:{boxWidth:10,font:{size:10}}};
 function renderRecord(){
   charts.forEach(c => c.destroy()); charts = [];
-  const tabs = {test:"定期テスト", moshi:"模試", eiken:"英検", ielts:"IELTS"};
+  const tabs = {test:"定期テスト", tsuchi:"通知表", moshi:"模試", eiken:"英検", ielts:"IELTS"};
   $("#tab-record").innerHTML = `
     <div class="sub-tabs">${Object.entries(tabs).map(([k,v])=>`<button data-r="${k}" class="${recTab===k?"on":""}">${v}</button>`).join("")}</div>
     <div id="recBody"></div>
     <p class="muted">データは <a href="${sheetUrl}" target="_blank" rel="noopener">受験ナビ_データ（スプレッドシート）</a> に保存されます。答案や成績表の画像・PDFは <a href="${driveUrl(DRIVE.record)}" target="_blank" rel="noopener">📁 成績記録フォルダ</a> へ。</p>`;
   $("#tab-record").querySelectorAll("[data-r]").forEach(b => b.onclick = () => { recTab = b.dataset.r; renderRecord(); });
-  ({test:recTest, moshi:recMoshi, eiken:recEiken, ielts:recIelts})[recTab]();
+  ({test:recTest, tsuchi:recTsuchi, moshi:recMoshi, eiken:recEiken, ielts:recIelts})[recTab]();
+}
+
+// 定期テスト：1行＝学年×テスト×教科
+const SC = ["知識・技能","思考・判断","素点","クラス順位","学年順位","知技平均","思判平均","素点平均"];
+const SC_LABEL = ["知技","思判","素点","クラス<br>順位","学年<br>順位","知技<br>平均","思判<br>平均","素点<br>平均"];
+const ALIAS = {"英語コミュニケーションI":"英語コミュ", "論理・表現I":"論理・表現"};
+const normSubj = name => { const n = String(name).replace(/\s/g,"").replace(/[ⅠＩ]/g,"I"); return ALIAS[n] || subjects().find(s => s === n) || null; };
+let recTestSel = null;
+function setScore(s, t, k, v){
+  const rows = S["定期テスト"].rows;
+  let r = score(s, t);
+  if (!r) { r = {"学年":GRADE, "テスト":t, "教科":s}; rows.push(r); }
+  r[k] = v;
+  if ((k === "知識・技能" || k === "思考・判断") && num(r["知識・技能"]) !== null && num(r["思考・判断"]) !== null && !r["素点"])
+    r["素点"] = String(num(r["知識・技能"]) + num(r["思考・判断"]));
+}
+function setTotal(t, k, v){
+  const rows = S["総合順位"].rows;
+  let r = rows.find(x => String(x["学年"]) === GRADE && x["テスト"] === t);
+  if (!r) { r = {"学年":GRADE, "テスト":t}; rows.push(r); }
+  r[k] = v;
 }
 function recTest(){
-  const rows = T("定期テスト").filter(r => String(r["学年"]) === "1"), ts = tests();
-  const avg = t => { const v = rows.map(r => num(r[t])).filter(x => x !== null); return v.length ? (v.reduce((a,b)=>a+b,0)/v.length).toFixed(1) : ""; };
+  const ts = tests(), done = ts.filter(t => T("定期テスト").some(r => String(r["学年"]) === GRADE && r["テスト"] === t && r["素点"]));
+  const sel = recTestSel || done[done.length - 1] || ts[0];
+  const subs = subjects().filter(s => !na(s, sel));
+  const tot = T("総合順位").find(r => String(r["学年"]) === GRADE && r["テスト"] === sel) || {};
   $("#recBody").innerHTML = `
     <div class="card"><h2>📝 定期テスト結果（1年）</h2>
-      <p class="muted">点数を入力すると自動で保存されます。 <a href="${driveUrl(DRIVE.recTest)}" target="_blank" rel="noopener">📁 答案フォルダ</a></p>
-      <div class="tw"><table><tr><th>教科</th>${ts.map(t=>`<th>${esc(t)}</th>`).join("")}</tr>
-      ${rows.map(r=>`<tr><td>${esc(r["教科"])}</td>${ts.map(t => r[t] === "-" ? "<td>—</td>" :
-        `<td><input type="number" inputmode="numeric" min="0" max="100" style="width:64px" data-t="${esc(t)}" data-s="${esc(r["教科"])}" value="${esc(r[t])}"></td>`).join("")}</tr>`).join("")}
-      <tr><th>平均</th>${ts.map(t=>`<th>${avg(t)}</th>`).join("")}</tr></table></div>
+      <div class="row"><select id="tSel">${ts.map(t=>`<option ${t===sel?"selected":""}>${t}</option>`).join("")}</select>
+        <span class="muted">入力すると自動保存。素点が空なら知技＋思判で自動計算</span></div>
+      <div class="tw"><table><tr><th>教科</th>${SC_LABEL.map(l=>`<th>${l}</th>`).join("")}</tr>
+      ${subs.map(s => { const r = score(s, sel) || {}; return `<tr><td>${esc(s)}</td>${SC.map(k =>
+        `<td><input type="number" step="0.1" inputmode="decimal" style="width:58px" data-s="${esc(s)}" data-k="${k}" value="${esc(r[k] ?? "")}"></td>`).join("")}</tr>`; }).join("")}
+      </table></div>
+      <div class="row" style="margin-top:10px"><b>総合</b>　クラス順位 <input type="number" inputmode="numeric" id="tC" style="width:64px" value="${esc(tot["クラス順位"] || "")}">
+        コース順位 <input type="number" inputmode="numeric" id="tK" style="width:64px" value="${esc(tot["コース順位"] || "")}"></div>
+      <details><summary class="muted">📋 学校のページの表をコピーして貼り付け</summary>
+        <p class="muted">成績個人票の表をまるごと選択してコピーし、ここに貼り付けてね。「科目名・知技・思判・素点・クラス順位・学年順位・知技平均・思判平均・素点平均」の順に読み取ります。</p>
+        <textarea id="tPaste" rows="5" style="width:100%"></textarea>
+        <button class="g" id="tPasteBtn">読み取って「${esc(sel)}」に反映</button></details>
+      <p class="muted">成績個人票の画像・PDFは <a href="${driveUrl(DRIVE.recTest)}" target="_blank" rel="noopener">📁 定期テスト結果フォルダ</a> へ。</p>
     </div>
-    <div class="card"><h3>推移グラフ</h3><canvas id="cTest" height="260"></canvas></div>`;
-  $("#recBody").querySelectorAll("input[data-t]").forEach(i => i.onchange = () => {
-    rows.find(r => r["教科"] === i.dataset.s)[i.dataset.t] = i.value; save("定期テスト"); renderRecord();
-  });
-  chart("cTest", {type:"line", data:{labels:ts, datasets:rows.map(r=>({label:r["教科"], spanGaps:true, data:ts.map(t=>num(r[t]))}))},
+    ${done.includes(sel) ? `<div class="card"><h3>${esc(sel)}：自分の素点と平均点</h3><canvas id="cBar" height="280"></canvas></div>` : ""}
+    ${done.length ? `<div class="card"><h3>素点の推移</h3><canvas id="cTest" height="260"></canvas></div>
+    <div class="card"><h3>学年順位の推移</h3><canvas id="cRank" height="260"></canvas></div>` : ""}`;
+
+  $("#tSel").onchange = e => { recTestSel = e.target.value; renderRecord(); };
+  $("#recBody").querySelectorAll("input[data-k]").forEach(i => i.onchange = () => { setScore(i.dataset.s, sel, i.dataset.k, i.value); save("定期テスト"); renderRecord(); });
+  $("#tC").onchange = e => { setTotal(sel, "クラス順位", e.target.value); save("総合順位"); };
+  $("#tK").onchange = e => { setTotal(sel, "コース順位", e.target.value); save("総合順位"); };
+  $("#tPasteBtn").onclick = () => {
+    let n = 0, tn = 0;
+    $("#tPaste").value.split("\n").forEach(line => {
+      const c = line.split("\t").map(x => x.trim()).filter(x => x !== "");
+      if (!c.length) return;
+      if (/^クラス順位/.test(c[0]) && c[1]) { setTotal(sel, "クラス順位", c[1]); tn++; return; }
+      if (/^コース順位/.test(c[0]) && c[1]) { setTotal(sel, "コース順位", c[1]); tn++; return; }
+      const s = normSubj(c[0]), vals = c.slice(1).filter(x => !isNaN(Number(x)));
+      if (!s || !vals.length) return;
+      vals.slice(0, SC.length).forEach((v, i) => setScore(s, sel, SC[i], v));
+      n++;
+    });
+    if (!n && !tn) return alert("読み取れる行がありませんでした。表の部分をコピーしてね");
+    if (n) save("定期テスト"); if (tn) save("総合順位");
+    alert(`${n}科目${tn ? "と総合順位" : ""}を反映しました`); renderRecord();
+  };
+
+  chart("cBar", {type:"bar", data:{labels:subs, datasets:[
+      {label:"自分の素点", data:subs.map(s => num(score(s, sel)?.["素点"]))},
+      {label:"平均点", data:subs.map(s => num(score(s, sel)?.["素点平均"]))}]},
     options:{scales:{y:{min:0,max:100}},plugins:{legend}}});
+  chart("cTest", {type:"line", data:{labels:done, datasets:subjects().map(s => ({label:s, spanGaps:true, data:done.map(t => num(score(s, t)?.["素点"]))}))},
+    options:{scales:{y:{min:0,max:100}},plugins:{legend}}});
+  const totals = done.map(t => T("総合順位").find(r => String(r["学年"]) === GRADE && r["テスト"] === t) || {});
+  chart("cRank", {type:"line", data:{labels:done, datasets:[
+      {label:"総合クラス順位", data:totals.map(r => num(r["クラス順位"])), borderWidth:3},
+      {label:"総合コース順位", data:totals.map(r => num(r["コース順位"])), borderWidth:3},
+      ...subjects().map(s => ({label:s, spanGaps:true, borderDash:[4,3], data:done.map(t => num(score(s, t)?.["学年順位"]))}))]},
+    options:{scales:{y:{reverse:true, min:1}},plugins:{legend}}});
+}
+
+// 通知表：1行＝学年×学期×教科
+const TSUCHI_SUBJ = ["現代の国語","言語文化","歴史総合","公共","数学I","数学A","物理基礎","生物基礎","体育","保健","音楽I","英語コミュ","論理・表現","情報I"];
+const TK = ["知識・技能","思考・判断・表現","主体的に取り組む態度","評定","欠課"];
+const AT = ["授業日数","出停・忌引等","留学中","出席しなければならない日数","欠席","出席","遅刻","早退"];
+let tsuchiSel = "前期";
+function recTsuchi(){
+  const rows = S["通知表"].rows, get = s => rows.find(r => String(r["学年"]) === GRADE && r["学期"] === tsuchiSel && r["教科"] === s);
+  const att = S["出席"].rows.find(r => String(r["学年"]) === GRADE && r["学期"] === tsuchiSel) || {};
+  const hy = TSUCHI_SUBJ.map(s => num(get(s)?.["評定"])).filter(x => x !== null);
+  const avgHy = hy.length ? (hy.reduce((a,b)=>a+b,0) / hy.length).toFixed(1) : "";
+  const terms = ["前期","後期","学年"];
+  const avgOf = t => { const v = TSUCHI_SUBJ.map(s => num(rows.find(r => String(r["学年"]) === GRADE && r["学期"] === t && r["教科"] === s)?.["評定"])).filter(x => x !== null); return v.length ? v.reduce((a,b)=>a+b,0) / v.length : null; };
+  $("#recBody").innerHTML = `
+    <div class="card"><h2>📄 成績通知表（1年）</h2>
+      <div class="sub-tabs">${terms.map(t=>`<button data-t="${t}" class="${t===tsuchiSel?"on":""}">${t}</button>`).join("")}</div>
+      <div class="next card" style="margin:6px 0"><div>評定平均（${tsuchiSel}）</div><div class="big">${avgHy || "—"}</div></div>
+      <div class="tw"><table><tr><th>科目</th><th>知識<br>技能</th><th>思考<br>判断<br>表現</th><th>主体的<br>態度</th><th>評定</th><th>欠課</th></tr>
+      ${TSUCHI_SUBJ.map(s => { const r = get(s) || {}; return `<tr><td>${esc(s)}</td>${TK.map(k =>
+        `<td><input ${k === "評定" || k === "欠課" ? 'type="number" inputmode="numeric"' : 'list="grades"'} style="width:52px" data-s="${esc(s)}" data-k="${k}" value="${esc(r[k] ?? "")}"></td>`).join("")}</tr>`; }).join("")}
+      </table></div>
+      <datalist id="grades"><option>A°</option><option>A</option><option>B°</option><option>B</option><option>C</option></datalist>
+      <p class="muted">評価：A 高い達成／B おおむね達成／C 達成が不十分</p>
+      <h3>出席状況</h3>
+      <div class="tw"><table><tr>${AT.map(k=>`<th style="white-space:normal">${k}</th>`).join("")}</tr>
+        <tr>${AT.map(k=>`<td><input type="number" inputmode="numeric" style="width:52px" data-a="${k}" value="${esc(att[k] ?? "")}"></td>`).join("")}</tr></table></div>
+    </div>
+    <div class="card"><h3>評定平均の推移</h3><canvas id="cHy" height="180"></canvas></div>`;
+  $("#recBody").querySelectorAll("[data-t]").forEach(b => b.onclick = () => { tsuchiSel = b.dataset.t; renderRecord(); });
+  $("#recBody").querySelectorAll("input[data-k]").forEach(i => i.onchange = () => {
+    let r = get(i.dataset.s);
+    if (!r) { r = {"学年":GRADE, "学期":tsuchiSel, "教科":i.dataset.s}; rows.push(r); }
+    r[i.dataset.k] = i.value; save("通知表"); renderRecord();
+  });
+  $("#recBody").querySelectorAll("input[data-a]").forEach(i => i.onchange = () => {
+    let r = S["出席"].rows.find(x => String(x["学年"]) === GRADE && x["学期"] === tsuchiSel);
+    if (!r) { r = {"学年":GRADE, "学期":tsuchiSel}; S["出席"].rows.push(r); }
+    r[i.dataset.a] = i.value; save("出席");
+  });
+  chart("cHy", {type:"bar", data:{labels:terms, datasets:[{label:"評定平均", data:terms.map(avgOf)}]},
+    options:{scales:{y:{min:1,max:5}},plugins:{legend:{display:false}}}});
 }
 function recMoshi(){
   const rows = T("模試"), cols = (S["模試"]?.headers || []).slice(2);
