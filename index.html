@@ -203,7 +203,7 @@ document.querySelectorAll("nav button").forEach(b => b.onclick = () => {
 // 学年・科目・テスト（向上高校は前期/後期制）
 const GRADE = "1";
 const TESTS = ["前期中間①","前期期末","後期中間①","後期中間②","後期期末","後期学年末"];
-const FINAL_ONLY = ["情報I"];
+const FINAL_ONLY = ["情報I", "保健"];
 const subjects = () => Object.keys(FOLDERS);
 const tests = () => TESTS;
 const na = (subj, test) => FINAL_ONLY.includes(subj) && test.includes("中間");
