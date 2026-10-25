@@ -191,10 +191,25 @@ if (store.get("pw")) login(store.get("pw"));
 function start(){
   $("#login").classList.add("hidden"); $("#app").classList.remove("hidden");
   $("#title").textContent = "🌸 詩の受験ナビ";
-  const t2 = upcomingTests()[1];
-  $("#countdown").innerHTML = (t2 ? `<div>${esc(t2["テスト"])}まで あと ${daysTo(t2["開始日"])} 日</div>` : "")
-    + `<div>共通テストまで あと約 ${daysTo(KYOTSU_DATE.toISOString().slice(0,10))} 日</div>`;
+  renderCountdown(); loadEikenDay();
   RENDER[cur]();
+}
+function renderCountdown(){
+  const t2 = upcomingTests()[1];
+  let ek = ""; try { ek = localStorage.getItem("eikenDay") || ""; } catch (e) {}
+  $("#countdown").innerHTML = (t2 ? `<div>${esc(t2["テスト"])}まで あと ${daysTo(t2["開始日"])} 日</div>` : "")
+    + (ek >= today() ? `<div>英検準1級まで あと ${daysTo(ek)} 日</div>` : "")
+    + `<div>共通テストまで あと約 ${daysTo(KYOTSU_DATE.toISOString().slice(0,10))} 日</div>`;
+}
+// 英検準1級ドリルの同期データから受験予定日を読む（URLは設定シートの vocabSync）
+async function loadEikenDay(){
+  const url = T("設定").find(r => r["キー"] === "vocabSync")?.["値"];
+  if (!url) return;
+  try {
+    const d = (await (await fetch(url)).json()).data?.testDay || "";
+    try { localStorage.setItem("eikenDay", d); } catch (e) {}
+    renderCountdown();
+  } catch (e) {}
 }
 
 // ===== タブ =====
