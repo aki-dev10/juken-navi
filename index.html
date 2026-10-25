@@ -255,7 +255,9 @@ function renderSchool(){
         const td = todos.filter(t => t["教科"] === s), qs = T("問題").filter(q => q["教科"] === s);
         const off = nt && na(s, nt["テスト"]);
         return `<button class="sbtn ${curSubj===s?"on":""} ${off?"off":""}" data-s="${esc(s)}">${esc(s)}
-          <small>${off ? `${esc(nt["テスト"])}は対象外` : na(s, tests()[0]) ? "期末のみ" : "中間・期末"}${td.length ? ` ／ ✅${td.filter(t=>t["完了"]==="TRUE").length}/${td.length}` : ""}${qs.length ? ` ／ 🧠${qs.length}` : ""}</small></button>`;
+          <small>${[off ? `${esc(nt["テスト"])}は対象外` : na(s, tests()[0]) ? "期末のみ" : "",
+            td.length ? `✅${td.filter(t=>t["完了"]==="TRUE").length}/${td.length}` : "",
+            qs.length ? `🧠${qs.length}` : ""].filter(Boolean).join(" ／ ") || "&nbsp;"}</small></button>`;
       }).join("")}</div>
     </div>
     <div id="subjDetail"></div>`;
