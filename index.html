@@ -32,6 +32,7 @@ h3{font-size:15px;margin:14px 0 6px}
 .sbtn{border:1px solid var(--line);background:var(--card);color:var(--text);border-radius:12px;padding:14px 8px;font-size:14px;cursor:pointer;text-align:center}
 .sbtn:hover,.sbtn.on{border-color:var(--accent);color:var(--accent)}
 .sbtn small{display:block;color:var(--sub);font-size:11px;margin-top:4px}
+.sbtn.off{background:rgba(128,128,128,.13);border-style:dashed;color:var(--sub)}
 .muted{color:var(--sub);font-size:13px}
 .soon{display:inline-block;background:var(--accent2);color:#fff;border-radius:6px;padding:1px 6px;font-size:11px;margin-left:6px;vertical-align:middle}
 a{color:var(--accent)}
@@ -252,8 +253,9 @@ function renderSchool(){
       <h2>📚 向上高校 定期テスト対策（1年）</h2>
       <div class="grid">${subjects().map(s => {
         const td = todos.filter(t => t["教科"] === s), qs = T("問題").filter(q => q["教科"] === s);
-        return `<button class="sbtn ${curSubj===s?"on":""}" data-s="${esc(s)}">${esc(s)}
-          <small>${na(s, tests()[0]) ? "期末のみ" : "中間・期末"}${td.length ? ` ／ ✅${td.filter(t=>t["完了"]==="TRUE").length}/${td.length}` : ""}${qs.length ? ` ／ 🧠${qs.length}` : ""}</small></button>`;
+        const off = nt && na(s, nt["テスト"]);
+        return `<button class="sbtn ${curSubj===s?"on":""} ${off?"off":""}" data-s="${esc(s)}">${esc(s)}
+          <small>${off ? `${esc(nt["テスト"])}は対象外` : na(s, tests()[0]) ? "期末のみ" : "中間・期末"}${td.length ? ` ／ ✅${td.filter(t=>t["完了"]==="TRUE").length}/${td.length}` : ""}${qs.length ? ` ／ 🧠${qs.length}` : ""}</small></button>`;
       }).join("")}</div>
     </div>
     <div id="subjDetail"></div>`;
