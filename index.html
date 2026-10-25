@@ -19,7 +19,7 @@
 body{margin:0;background:var(--bg);color:var(--text);font-family:"Hiragino Sans","Yu Gothic UI",Meiryo,sans-serif;padding-bottom:calc(72px + env(safe-area-inset-bottom))}
 header{padding:14px 16px 4px;display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:6px;max-width:960px;margin:0 auto}
 header h1{font-size:20px;margin:0}
-header .cd{font-size:13px;color:var(--sub)}
+header .cd{font-size:13px;color:var(--sub);text-align:right}
 main{max-width:960px;margin:0 auto;padding:8px 16px}
 nav{position:fixed;bottom:0;left:0;right:0;display:flex;background:var(--card);border-top:1px solid var(--line);z-index:10;padding-bottom:env(safe-area-inset-bottom)}
 nav button{flex:1;border:0;background:none;padding:8px 2px 10px;font-size:11px;color:var(--sub);cursor:pointer}
@@ -191,7 +191,9 @@ if (store.get("pw")) login(store.get("pw"));
 function start(){
   $("#login").classList.add("hidden"); $("#app").classList.remove("hidden");
   $("#title").textContent = "🌸 詩の受験ナビ";
-  $("#countdown").textContent = `共通テストまで あと約 ${daysTo(KYOTSU_DATE.toISOString().slice(0,10))} 日`;
+  const t2 = upcomingTests()[1];
+  $("#countdown").innerHTML = (t2 ? `<div>${esc(t2["テスト"])}まで あと ${daysTo(t2["開始日"])} 日</div>` : "")
+    + `<div>共通テストまで あと約 ${daysTo(KYOTSU_DATE.toISOString().slice(0,10))} 日</div>`;
   RENDER[cur]();
 }
 
@@ -212,10 +214,11 @@ const subjects = () => Object.keys(FOLDERS);
 const tests = () => TESTS;
 const na = (subj, test) => FINAL_ONLY.includes(subj) && test.includes("中間");
 const score = (subj, test) => T("定期テスト").find(r => String(r["学年"]) === GRADE && r["テスト"] === test && r["教科"] === subj);
-function nextTest(){
+function upcomingTests(){
   const t = today();
-  return T("テスト日程").filter(r => r["終了日"] >= t).sort((a,b) => a["開始日"].localeCompare(b["開始日"]))[0];
+  return T("テスト日程").filter(r => r["開始日"] && r["終了日"] >= t).sort((a,b) => a["開始日"].localeCompare(b["開始日"]));
 }
+const nextTest = () => upcomingTests()[0];
 
 // ===== ① 定期テスト =====
 let curSubj = null, quiz = null;
