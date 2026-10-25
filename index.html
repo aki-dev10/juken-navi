@@ -197,9 +197,11 @@ function start(){
 function renderCountdown(){
   const t2 = upcomingTests()[1];
   let ek = ""; try { ek = localStorage.getItem("eikenDay") || ""; } catch (e) {}
-  $("#countdown").innerHTML = (t2 ? `<div>${esc(t2["テスト"])}まで あと ${daysTo(t2["開始日"])} 日</div>` : "")
-    + (ek >= today() ? `<div>英検準1級まで あと ${daysTo(ek)} 日</div>` : "")
-    + `<div>共通テストまで あと約 ${daysTo(KYOTSU_DATE.toISOString().slice(0,10))} 日</div>`;
+  const kd = KYOTSU_DATE.toISOString().slice(0,10);
+  const items = [[kd, `共通テストまで あと約 ${daysTo(kd)} 日`]];
+  if (t2) items.push([t2["開始日"], `${esc(t2["テスト"])}まで あと ${daysTo(t2["開始日"])} 日`]);
+  if (ek >= today()) items.push([ek, `英検準1級まで あと ${daysTo(ek)} 日`]);
+  $("#countdown").innerHTML = items.sort((a,b) => a[0].localeCompare(b[0])).map(i => `<div>${i[1]}</div>`).join("");
 }
 // 英検準1級ドリルの同期データから受験予定日を読む（URLは設定シートの vocabSync）
 async function loadEikenDay(){
