@@ -38,6 +38,7 @@ h3{font-size:15px;margin:14px 0 6px}
 a{color:var(--accent)}
 input,select,textarea{font:inherit;font-size:16px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--text);max-width:100%}
 button.b{background:var(--accent);color:#fff;border:0;border-radius:8px;padding:8px 14px;cursor:pointer;font-size:14px}
+label.b2{border:1px solid var(--accent);color:var(--accent);border-radius:8px;padding:7px 14px;cursor:pointer;font-size:14px}
 button.g{background:none;border:1px solid var(--line);color:var(--text);border-radius:8px;padding:6px 10px;cursor:pointer;font-size:13px}
 button.x{background:none;border:0;color:var(--ng);cursor:pointer;font-size:14px}
 .row{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin:6px 0}
@@ -534,28 +535,75 @@ function recTsuchi(){
     options:{scales:{y:{min:1,max:5}},plugins:{legend:{display:false}}}});
 }
 function recMoshi(){
-  const rows = T("模試"), cols = (S["模試"]?.headers || []).slice(2);
-  $("#recBody").innerHTML = `
-    <div class="card"><h2>📊 模試結果（偏差値）</h2>
-      <p class="muted"><a href="${driveUrl(DRIVE.recMoshi)}" target="_blank" rel="noopener">📁 模試成績表フォルダ</a></p>
-      <div class="tw"><table><tr><th>日付</th><th>模試名</th>${cols.map(k=>`<th>${esc(k)}</th>`).join("")}<th></th></tr>
-      ${rows.map((m,i)=>`<tr><td>${esc(m["日付"])}</td><td>${esc(m["模試名"])}</td>${cols.map(k=>`<td>${esc(m[k])}</td>`).join("")}<td><button class="x" data-del="${i}">✕</button></td></tr>`).join("") || `<tr><td colspan="${cols.length+3}" class="muted">まだ記録はありません</td></tr>`}
+  const rows = T("模試"), qs = T("模試設問");
+  const exams = [...new Set(rows.map(m => m["日付"] + "|" + m["模試名"]))].sort().reverse();
+  const of = (k, set) => set.filter(r => r["日付"] + "|" + r["模試名"] === k);
+  const pct = (a, b) => num(a) != null && num(b) ? Math.round(a / b * 1000) / 10 : null;
+  $("#recBody").innerHTML = exams.map((k, ei) => {
+    const rs = of(k, rows), head = rs[0], q = of(k, qs);
+    return `<div class="card"><h2>📊 ${esc(head["模試名"])} <span class="muted" style="font-size:13px">${esc(head["日付"].replace("-","/"))}</span></h2>
+      <div class="row">${head["PDF"] ? `<button class="b" data-pdf="${esc(head["PDF"])}">📄 成績表PDFを見る</button>` : ""}
+        <label class="b2">📎 PDFを${head["PDF"] ? "差し替え" : "添付"}<input type="file" accept="application/pdf,image/*" data-up="${esc(k)}" hidden></label></div>
+      <div class="tw"><table><tr><th>教科</th><th>得点</th><th>全国偏差値</th><th>全国順位</th><th>県偏差値</th><th>校内順位</th><th>GTZ</th><th></th></tr>
+      ${rs.map(m => `<tr><td>${esc(m["教科"])}</td><td>${m["得点"] ? `${esc(m["得点"])}<span class="muted">/${esc(m["満点"])}</span>` : ""}</td>
+        <td><b>${esc(m["全国偏差値"])}</b></td>
+        <td>${m["全国順位"] ? `${Number(m["全国順位"]).toLocaleString()}<span class="muted">/${Number(m["全国人数"]).toLocaleString()}（上位${pct(m["全国順位"], m["全国人数"])}%）</span>` : ""}</td>
+        <td>${esc(m["県偏差値"])}</td>
+        <td>${m["校内順位"] ? `${esc(m["校内順位"])}<span class="muted">/${esc(m["校内人数"])}</span>` : ""}</td>
+        <td>${esc(m["GTZ"])}</td><td><button class="x" data-del="${rows.indexOf(m)}">✕</button></td></tr>`).join("")}
       </table></div>
-      <h3>追加</h3>
-      <div class="row"><input type="date" id="mDate"><input id="mName" placeholder="模試名（例：進研模試 1月）" style="flex:1"></div>
-      <div class="row">${cols.map(k=>`<input type="number" step="0.1" inputmode="decimal" placeholder="${esc(k)}" data-k="${esc(k)}" style="width:140px">`).join("")}</div>
+      ${q.length ? `<h3>設問別の得点率（▼＝要対策、○＝よくできた）</h3><div style="height:${70 + q.length * 26}px"><canvas id="cMq${ei}"></canvas></div>` : ""}
+      <h3>分析メモ</h3><textarea data-memo="${esc(k)}" rows="6" style="width:100%">${esc(head["メモ"])}</textarea>
+    </div>`;
+  }).join("") + `
+    ${exams.length > 1 ? `<div class="card"><h3>全国偏差値の推移</h3><canvas id="cMoshi" height="260"></canvas></div>` : ""}
+    <div class="card"><h3>模試の結果を追加</h3>
+      <p class="muted"><a href="${driveUrl(DRIVE.recMoshi)}" target="_blank" rel="noopener">📁 模試結果フォルダ</a></p>
+      <div class="row"><input type="month" id="mDate"><input id="mName" placeholder="模試名（例：ベネッセ総合学力テスト 11月）" style="flex:1"></div>
+      <div class="row"><input id="mSubj" placeholder="教科（例：英語、国数英総合）" style="width:180px">
+        ${["得点","満点","全国偏差値","校内順位","校内人数","GTZ"].map(k=>`<input data-k="${k}" placeholder="${k}" style="width:90px">`).join("")}</div>
       <button class="b" id="mAdd">追加</button>
-    </div>
-    ${rows.length ? `<div class="card"><h3>偏差値の推移</h3><canvas id="cMoshi" height="260"></canvas></div>` : ""}`;
-  $("#recBody").querySelectorAll("[data-del]").forEach(b => b.onclick = () => { if (confirm("削除しますか？")) { rows.splice(b.dataset.del,1); save("模試"); renderRecord(); } });
+      <p class="muted" style="font-size:12px">教科ごとに1行ずつ追加します。詳しい順位などはスプレッドシートの「模試」シートでも直せます。</p>
+    </div>`;
+  const body = $("#recBody");
+  body.querySelectorAll("[data-del]").forEach(b => b.onclick = () => { if (confirm("削除しますか？")) { rows.splice(b.dataset.del,1); save("模試"); renderRecord(); } });
+  body.querySelectorAll("[data-memo]").forEach(t => t.onchange = () => { const h = of(t.dataset.memo, rows)[0]; h["メモ"] = t.value; save("模試"); });
+  body.querySelectorAll("[data-pdf]").forEach(b => b.onclick = () => openFile(b.dataset.pdf));
+  body.querySelectorAll("[data-up]").forEach(i => i.onchange = async () => {
+    const f = i.files[0]; if (!f) return;
+    const b64 = await new Promise(r => { const fr = new FileReader(); fr.onload = () => r(fr.result.split(",")[1]); fr.readAsDataURL(f); });
+    i.parentElement.firstChild.textContent = "アップロード中…";
+    const res = await api({action:"upload", folder:DRIVE.recMoshi, name:f.name, mime:f.type || "application/pdf", b64});
+    if (!res.ok) { alert("アップロードできませんでした：" + res.error); return renderRecord(); }
+    of(i.dataset.up, rows)[0]["PDF"] = res.id; save("模試"); renderRecord();
+  });
   $("#mAdd").onclick = () => {
-    if (!$("#mName").value) return alert("模試名を入れてね");
-    const o = {"日付":$("#mDate").value, "模試名":$("#mName").value};
-    $("#recBody").querySelectorAll("input[data-k]").forEach(i => o[i.dataset.k] = i.value);
+    if (!$("#mName").value || !$("#mSubj").value) return alert("模試名と教科を入れてね");
+    const o = {"日付":$("#mDate").value, "模試名":$("#mName").value, "教科":$("#mSubj").value};
+    body.querySelectorAll("input[data-k]").forEach(i => o[i.dataset.k] = i.value);
     rows.push(o); rows.sort((a,b)=>a["日付"].localeCompare(b["日付"])); save("模試"); renderRecord();
   };
-  chart("cMoshi", {type:"line", data:{labels:rows.map(m=>m["模試名"]), datasets:cols.map(k=>({label:k, spanGaps:true, data:rows.map(m=>num(m[k]))}))},
+  exams.forEach((k, ei) => {
+    const q = of(k, qs);
+    chart("cMq" + ei, {type:"bar", data:{labels:q.map(x => `${x["印"]}${x["教科"]} ${x["設問"]}`),
+      datasets:[{label:"自分", data:q.map(x => pct(x["得点"], x["配点"]))}, {label:"全国平均", data:q.map(x => pct(x["全国平均"], x["配点"]))}]},
+      options:{indexAxis:"y", maintainAspectRatio:false, scales:{x:{min:0, max:100}}, plugins:{legend}}});
+  });
+  const names = exams.slice().reverse(), subj = [...new Set(rows.map(m => m["教科"]))];
+  chart("cMoshi", {type:"line", data:{labels:names.map(k => k.split("|")[1]), datasets:subj.map(s => ({label:s, spanGaps:true,
+    data:names.map(k => num(of(k, rows).find(m => m["教科"] === s)?.["全国偏差値"]))}))},
     options:{scales:{y:{suggestedMin:40,suggestedMax:70}},plugins:{legend}}});
+}
+// 添付ファイルを Apps Script 経由で取り出して新しいタブで開く（iPad で Google ログインがなくても見られるように）
+async function openFile(id){
+  const w = window.open("", "_blank");
+  if (w) w.document.write("読み込み中…");
+  const res = await api({action:"file", id});
+  if (!res.ok) { if (w) w.close(); return alert("ファイルを開けませんでした：" + res.error); }
+  const bin = atob(res.b64), u8 = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) u8[i] = bin.charCodeAt(i);
+  const url = URL.createObjectURL(new Blob([u8], {type:res.mime}));
+  if (w) w.location.href = url; else location.href = url;
 }
 function recEiken(){
   const rows = T("英検");
