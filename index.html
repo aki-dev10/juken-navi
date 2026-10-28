@@ -34,6 +34,7 @@ h3{font-size:15px;margin:14px 0 6px}
 .sbtn small{display:block;color:var(--sub);font-size:11px;margin-top:4px}
 .sbtn.off{background:rgba(128,128,128,.13);border-style:dashed;color:var(--sub)}
 .muted{color:var(--sub);font-size:13px}
+summary{cursor:pointer;font-size:16px}.info{color:var(--accent);font-size:18px}
 .soon{display:inline-block;background:var(--accent2);color:#fff;border-radius:6px;padding:1px 6px;font-size:11px;margin-left:6px;vertical-align:middle}
 a{color:var(--accent)}
 input,select,textarea{font:inherit;font-size:16px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--text);max-width:100%}
@@ -394,7 +395,20 @@ function renderKyotsu(){
       <p class="muted">受験予定科目（2029年1月 受験予定）</p>
       <div class="grid">${KYOTSU.map(x=>`<button class="sbtn" data-k="${esc(x)}">${x}<small>準備中</small></button>`).join("")}</div>
       <p class="muted" style="margin-top:12px"><a href="${driveUrl(DRIVE.kyotsu)}" target="_blank" rel="noopener">📁 共通テスト過去問フォルダ</a></p>
-    </div>`;
+    </div>
+    <div class="card"><details><summary><b>一橋大学 学校推薦型選抜</b> <span class="info">ⓘ</span></summary>
+      <h3>第1段階で使う科目（推薦要項 p.19 の別表）</h3>
+      <p class="muted">商・経済・法・社会（全学部共通の第1欄。素点の合計で、学部ごとの傾斜はなし）</p>
+      <table><tr><th>科目</th><th>点数</th></tr>
+        ${[["国語",200],["地理歴史・公民から2科目",200],["数学ⅠA",100],["数学ⅡBC",100],["理科1科目（基礎2科目、または専門科目1つ）",100],["英語（リーディング100＋リスニング100）",200],["情報Ⅰ",100]].map(([k,v])=>`<tr><td style="white-space:normal">${k}</td><td>${v}</td></tr>`).join("")}
+        <tr><th>合計</th><th>1000</th></tr></table>
+      <p class="muted">ソーシャル・データサイエンス学部は、上の文系型と理系型（理科の専門科目2つ＋地歴公民1科目）の高い方を使います。</p>
+      <h3>第1段階の基準（R8年度）</h3>
+      <p class="muted">志望学部の一般選抜前期出願者のうち、この順位の人の点数以上なら通過</p>
+      <table><tr><th>学部</th><th>基準順位</th></tr>
+        ${[["商",258],["経済",258],["法",159],["社会",220],["ソーシャル・データサイエンス",60]].map(([k,v])=>`<tr><td>${k}</td><td>上位${v}位</td></tr>`).join("")}</table>
+      <p class="muted"><a href="https://juken.hit-u.ac.jp/admission/info/guidelines/files/R8suisen_youkou.pdf" target="_blank" rel="noopener">📄 R8 推薦募集要項（PDF）</a></p>
+    </details></div>`;
   $("#tab-kyotsu").querySelectorAll("[data-k]").forEach(b => b.onclick = () => alert(`「${b.dataset.k}」の対策ページは準備中です`));
 }
 
