@@ -69,6 +69,16 @@ th:first-child,td:first-child{text-align:left}
 .bar{height:6px;background:var(--line);border-radius:3px;overflow:hidden}.bar i{display:block;height:100%;background:var(--accent)}
 #login{max-width:360px;margin:15vh auto;text-align:center;padding:0 16px}
 #login input{font-size:24px;text-align:center;letter-spacing:8px;width:180px}
+.mq{border:2px solid var(--line);border-radius:14px;padding:12px;margin:8px 0}
+.mqq{font-size:17px;line-height:1.7;margin:12px 0;font-weight:bold}
+.mfig{background:#fff;border-radius:10px;padding:6px;margin:8px 0}.mfig svg{width:100%;height:auto;display:block}
+.mch{display:grid;gap:8px}
+.mch button{text-align:left;font-size:15px;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--card);color:var(--text);cursor:pointer}
+.mch button.right{background:#e3f6ec;border-color:var(--ok);color:#1b6b45;font-weight:bold}
+.mch button.wrong{background:#fde8e8;border-color:var(--ng);color:#a33}
+.mex{border-radius:10px;padding:10px 12px;margin:10px 0;font-size:14px;line-height:1.7}
+.mex.ok2{background:rgba(46,158,106,.13)}.mex.ng2{background:rgba(209,75,75,.13)}
+.mbig{font-size:28px;font-weight:bold;margin:10px 0}
 #sync{position:fixed;top:8px;right:8px;font-size:12px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:2px 8px;color:var(--sub)}
 </style>
 </head>
@@ -103,6 +113,7 @@ th:first-child,td:first-child{text-align:left}
   </nav>
 </div>
 
+<script src="data/mondai-kokyo.js"></script>
 <script>
 // ===== 設定 =====
 const API = "https://script.google.com/macros/s/AKfycbznBKX6lJgRgamCGfco9nRSzC3EET2pfI6mM79XjkVqDZj2ThZkwkKFpAcnmz9TB3o4Eg/exec";
@@ -280,6 +291,7 @@ function renderSubject(){
       <p class="muted">${na(s, tests()[0]) ? "※ 期末テストのみ実施" : "中間テスト・期末テスト"}${NOTES[s] ? "　※ " + NOTES[s] : ""}
         ／ <a href="${driveUrl(FOLDERS[s])}" target="_blank" rel="noopener">📁 教材フォルダ</a></p>
 
+      ${window.MONDAI?.[s] ? '<div id="mondai"></div>' : ""}
       <h3>🧠 一問一答（${qs.length}問${rate !== null ? `・正答率 ${rate}%` : ""}）</h3>
       ${qs.length ? `<div class="row">
         <select id="qUnit"><option value="">すべての単元</option>${units.map(u=>`<option>${esc(u)}</option>`).join("")}</select>
@@ -307,6 +319,8 @@ function renderSubject(){
       <div class="tw"><table><tr><th></th>${ts.map(t=>`<th>${esc(t)}</th>`).join("")}</tr>
         ${[["素点","素点"],["平均点","素点平均"],["学年順位","学年順位"]].map(([l,k]) => `<tr><td>${l}</td>${ts.map(t=>`<td>${esc(score(s,t)?.[k] || "")}</td>`).join("")}</tr>`).join("")}</table></div>
     </div>`;
+
+  if (window.MONDAI?.[s]) renderMondai(s);
 
   // 一問一答
   if (qs.length) $("#qStart").onclick = () => {
@@ -346,6 +360,59 @@ function renderSubject(){
   $("#todoAdd").onclick = add;
   $("#todoIn").onkeydown = e => { if (e.key === "Enter" && !e.isComposing) add(); };
 }
+// ===== 想定問題集（data/mondai-*.js。ch[0] が正解、表示時にシャッフル） =====
+const shuffle = a => a.map(x => [x, Math.random()]).sort((p, q) => p[1] - q[1]).map(x => x[0]);
+function renderMondai(s, run){
+  const M = MONDAI[s], el = $("#mondai"), key = id => `mondai:${s}:${id}`;
+  if (!run) {
+    el.innerHTML = `<h3>📘 ${esc(M.title)}</h3><p class="muted">${esc(M.note)}</p>
+      <div class="grid">${M.sets.map((x, i) => { const b = store.get(key(x.id)); return `<button class="sbtn mset" data-i="${i}" style="border-color:${x.color}">
+        <span style="font-size:26px">${x.icon}</span><br><b style="color:${x.color}">${esc(x.title)}</b><small>${x.qs.length}問${b != null ? `・最高 ${b}/${x.qs.length}` : ""}</small></button>`; }).join("")}</div>`;
+    el.querySelectorAll(".mset").forEach(b => b.onclick = () => {
+      const set = M.sets[b.dataset.i];
+      renderMondai(s, {set, i: 0, ok: 0, ans: null, order: set.qs.map(q => q.ch ? shuffle(q.ch.map((_, j) => j)) : null)});
+      el.scrollIntoView({behavior: "smooth"});
+    });
+    return;
+  }
+  const {set} = run, q = set.qs[run.i], n = set.qs.length;
+  if (!q) {
+    store.set(key(set.id), Math.max(run.ok, store.get(key(set.id)) || 0));
+    const pct = Math.round(100 * run.ok / n);
+    el.innerHTML = `<div class="mq" style="border-color:${set.color};text-align:center"><h3>${set.icon} ${esc(set.title)}</h3>
+      <div class="mbig">${run.ok} / ${n} 問正解（${pct}%）</div>
+      <p>${pct >= 80 ? "🎉 すばらしい！テスト本番もこの調子！" : pct >= 50 ? "👍 いい調子！まちがえた問題の解説を読み直そう" : "💪 解説を読んで、もう一度チャレンジ！"}</p>
+      <div class="row" style="justify-content:center"><button class="b" id="mAgain">もう一度</button><button class="g" id="mBack">一覧へ</button></div></div>`;
+    $("#mAgain").onclick = () => renderMondai(s, {...run, i: 0, ok: 0, ans: null, order: set.qs.map(q => q.ch ? shuffle(q.ch.map((_, j) => j)) : null)});
+    $("#mBack").onclick = () => renderMondai(s);
+    return;
+  }
+  const done = run.ans !== null;
+  el.innerHTML = `<div class="mq" style="border-color:${set.color}">
+    <div class="row" style="justify-content:space-between"><b style="color:${set.color}">${set.icon} ${esc(set.title)}</b><span class="muted">${run.i + 1} / ${n}　⭕ ${run.ok}</span></div>
+    <div class="bar"><i style="width:${100 * run.i / n}%;background:${set.color}"></i></div>
+    <div class="mqq">Q${run.i + 1}. ${esc(q.q)}</div>
+    ${q.fig ? `<div class="mfig">${M.figs[q.fig]}</div>` : ""}
+    ${q.ch ? `<div class="mch">${run.order[run.i].map(j => `<button data-j="${j}" class="${done ? (j === 0 ? "right" : j === run.ans ? "wrong" : "") : ""}" ${done ? "disabled" : ""}>${esc(q.ch[j])}</button>`).join("")}</div>`
+      : `<div class="row"><input id="mNum" inputmode="decimal" style="width:150px" ${done ? `value="${esc(run.ans)}" disabled` : 'placeholder="数字で入力"'}> ${esc(q.unit || "")} ${done ? "" : '<button class="b" id="mCheck">答え合わせ</button>'}</div>`}
+    ${done ? `<div class="mex ${run.right ? "ok2" : "ng2"}"><b>${run.right ? "⭕ 正解！" : "❌ ざんねん"}</b>　答え：<b>${esc(q.ch ? q.ch[0] : q.num + (q.unit || ""))}</b><br>${esc(q.ex)}</div>
+      <div class="row"><button class="b" id="mNext">${run.i + 1 < n ? "次へ ▶" : "結果を見る"}</button></div>` : ""}
+    <p><button class="g" id="mQuit">やめる</button></p></div>`;
+  const answer = (v, right) => { run.ans = v; run.right = right; if (right) run.ok++; renderMondai(s, run); };
+  if (done) $("#mNext").onclick = () => { run.i++; run.ans = null; renderMondai(s, run); };
+  else if (q.ch) el.querySelectorAll("[data-j]").forEach(b => b.onclick = () => answer(Number(b.dataset.j), b.dataset.j === "0"));
+  else {
+    const go = () => {
+      const v = $("#mNum").value.trim(); if (!v) return;
+      const x = Number(v.replace(/[０-９．]/g, c => String.fromCharCode(c.charCodeAt(0) - 0xFEE0)).replace(/[,，\s万億兆円％%]/g, ""));
+      answer(v, Math.abs(x - q.num) < 1e-6);
+    };
+    $("#mCheck").onclick = go;
+    $("#mNum").onkeydown = e => { if (e.key === "Enter" && !e.isComposing) go(); };
+  }
+  $("#mQuit").onclick = () => renderMondai(s);
+}
+
 function renderQuiz(){
   const el = $("#tab-school"), q = quiz.list[quiz.i];
   if (!q) {
