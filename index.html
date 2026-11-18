@@ -296,7 +296,7 @@ function renderSubject(){
       </details>
 
       <h3>📝 テスト範囲メモ</h3>
-      <textarea id="memo" rows="3" style="width:100%" placeholder="例：教科書 p.20〜58、ワーク Lesson3〜5">${esc(memo?.["メモ"] || "")}</textarea>
+      <textarea id="memo" rows="${Math.max(3, (memo?.["メモ"] || "").split("\n").length + 1)}" style="width:100%" placeholder="例：教科書 p.20〜58、ワーク Lesson3〜5">${esc(memo?.["メモ"] || "")}</textarea>
 
       <h3>✅ やることリスト</h3>
       <div>${todos.map(t => `
